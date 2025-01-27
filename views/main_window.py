@@ -1,6 +1,7 @@
 import wx
 from views.book_view import BookView
 from views.member_view import MemberView
+from views.borrow_view import BorrowView
 
 class MainWindow(wx.Frame):
     def __init__(self, parent, title):
@@ -11,6 +12,7 @@ class MainWindow(wx.Frame):
         # Add tabs
         notebook.AddPage(BookView(notebook), "Books")
         notebook.AddPage(MemberView(notebook), "Members")
+        notebook.AddPage(BorrowView(notebook), "Borrow/Return")
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(notebook, 1, wx.EXPAND)

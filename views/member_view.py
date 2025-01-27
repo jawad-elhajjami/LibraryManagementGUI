@@ -1,5 +1,6 @@
 import wx
 import sqlite3
+from datetime import datetime  # Import the datetime module
 
 
 class MemberView(wx.Panel):
@@ -44,6 +45,7 @@ class MemberView(wx.Panel):
         self.member_table.InsertColumn(1, "Name", width=150)
         self.member_table.InsertColumn(2, "Email", width=200)
         self.member_table.InsertColumn(3, "Phone", width=100)
+        self.member_table.InsertColumn(4, "Membership date", width=100)
 
         # Buttons to delete members
         delete_button = wx.Button(self, label="Delete Member")
@@ -69,15 +71,18 @@ class MemberView(wx.Panel):
             wx.MessageBox("All fields are required.", "Error", wx.OK | wx.ICON_ERROR)
             return
 
+        # Get the current date as the membership_date
+        membership_date = datetime.now().strftime("%Y-%m-%d")  # Format as YYYY-MM-DD
+        
         conn = sqlite3.connect("database/library.db")
         cursor = conn.cursor()
 
         cursor.execute(
             """
-            INSERT INTO Member (name, email, phone)
-            VALUES (?, ?, ?)
+            INSERT INTO Member (name, email, phone, membership_date)
+            VALUES (?, ?, ?, ?)
             """,
-            (name, email, phone),
+            (name, email, phone, membership_date),
         )
 
         conn.commit()

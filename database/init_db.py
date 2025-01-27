@@ -13,12 +13,12 @@ def create_tables():
         availability TEXT NOT NULL
     )
     """)
-    
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Member (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         email TEXT NOT NULL,
+        phone TEXT NOT NULL,  -- Changed to TEXT to handle phone numbers correctly
         membership_date TEXT NOT NULL
     )
     """)
