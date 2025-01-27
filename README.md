@@ -1,3 +1,4 @@
+# LibraryManagementGUI
 # Library Management System
 
 A simple Library Management System built using Python, wxPython for the GUI, and SQLite3 for the database. The system allows for managing books, members, and staff, along with tracking borrowing and returning of books.
@@ -8,17 +9,6 @@ A simple Library Management System built using Python, wxPython for the GUI, and
 - **Members Management:** Add, view, update, and delete members.
 - **Borrowing System:** Track which members have borrowed books and when they return them.
 - **Staff Management:** Manage staff details for library operations.
-
-## Project Structure
-
-The project is organized into the following structure:
-```
-LibraryManagement/ │ ├── database/ │ └── library.db # SQLite3 database file │ ├── models/ │ ├── book.py # Book class │ ├── member.py # Member class │ ├── borrow.py # Borrow class │ └── staff.py # Staff class │ ├── views/ │ ├── main_window.py # wxPython main GUI │ ├── book_view.py # GUI for books │ ├── member_view.py # GUI for members │ └── borrow_view.py # GUI for borrow/return │ ├── app.py # Entry point for the application └── requirements.txt # List of dependencies
-
-markdown
-Copier
-Modifier
-```
 
 ### Models
 
@@ -44,25 +34,13 @@ The database is stored as a `.db` file (SQLite3 format) and contains tables for 
 
 git clone https://github.com/your-username/LibraryManagement.git cd LibraryManagement
 
-markdown
-Copier
-Modifier
-
 2. Install the required dependencies:
 
 pip install -r requirements.txt
 
-markdown
-Copier
-Modifier
-
 3. Launch the application:
 
 python app.py
-
-markdown
-Copier
-Modifier
 
 ## Requirements
 
