@@ -1,4 +1,3 @@
-# LibraryManagementGUI
 # Library Management System
 
 A simple Library Management System built using Python, wxPython for the GUI, and SQLite3 for the database. The system allows for managing books, members, and staff, along with tracking borrowing and returning of books.
