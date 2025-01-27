@@ -12,12 +12,13 @@ A simple Library Management System built using Python, wxPython for the GUI, and
 ## Project Structure
 
 The project is organized into the following structure:
-
+```
 LibraryManagement/ │ ├── database/ │ └── library.db # SQLite3 database file │ ├── models/ │ ├── book.py # Book class │ ├── member.py # Member class │ ├── borrow.py # Borrow class │ └── staff.py # Staff class │ ├── views/ │ ├── main_window.py # wxPython main GUI │ ├── book_view.py # GUI for books │ ├── member_view.py # GUI for members │ └── borrow_view.py # GUI for borrow/return │ ├── app.py # Entry point for the application └── requirements.txt # List of dependencies
 
 markdown
 Copier
 Modifier
+```
 
 ### Models
 
