@@ -72,6 +72,8 @@ class BorrowView(wx.Panel):
         
         # Auto-refresh on show
         self.Bind(wx.EVT_SHOW, self.on_show)
+        self.choose_book.Bind(wx.EVT_COMBOBOX, self.on_select_book)
+        self.choose_member.Bind(wx.EVT_COMBOBOX, self.on_select_member)
 
     def on_show(self, event):
         """Refresh data when the panel is shown."""
@@ -79,7 +81,24 @@ class BorrowView(wx.Panel):
             wx.CallAfter(self.populate_books_dropdown)
             wx.CallAfter(self.populate_members_dropdown)
             wx.CallAfter(self.load_borrow_records)
+    
+    def on_select_book(self, event):
+        """Update selected book ID when a book is chosen."""
+        selected_title = self.choose_book.GetValue()
+        for book_id, title in self.book_dict.items():
+            if title == selected_title:
+                self.selected_book_id = book_id
+                break
 
+    def on_select_member(self, event):
+        """Update selected member ID when a member is chosen."""
+        selected_name = self.choose_member.GetValue()
+        for member_id, name in self.member_dict.items():
+            if name == selected_name:
+                self.selected_member_id = member_id
+                break
+
+    
     def populate_books_dropdown(self):
         """Load books into the dropdown."""
         conn = sqlite3.connect("database/library.db")
