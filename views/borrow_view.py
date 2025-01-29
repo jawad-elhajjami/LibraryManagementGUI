@@ -1,6 +1,7 @@
 import wx
 import sqlite3
 from datetime import datetime
+from wx.lib.pubsub import pub 
 
 
 class BorrowView(wx.Panel):
@@ -13,30 +14,21 @@ class BorrowView(wx.Panel):
         # Form to borrow a book
         form_sizer = wx.GridBagSizer(5, 5)
         
-        # choose book dropown
+        # Choose book dropdown
         choose_book_label = wx.StaticText(self, label="Choose Book:")
         self.choose_book = wx.ComboBox(self, style=wx.CB_READONLY)
-        self.populate_books_dropdown()
         
-        # Set event handler for book selection
-        self.choose_book.Bind(wx.EVT_COMBOBOX, self.on_select_book)
-        
-        # choose member dropdown
+        # Choose member dropdown
         choose_member_label = wx.StaticText(self, label="Choose Member:")
         self.choose_member = wx.ComboBox(self, style=wx.CB_READONLY)
-        self.populate_members_dropdown()
         
-        # Set event handler for member selection
-        self.choose_member.Bind(wx.EVT_COMBOBOX, self.on_select_member)
-    
         borrow_button = wx.Button(self, label="Borrow Book")
         borrow_button.Bind(wx.EVT_BUTTON, self.on_borrow_book)
                 
-        # choose book dropown        
+        # Add to layout        
         form_sizer.Add(choose_book_label, pos=(0, 0), flag=wx.ALL, border=5)
         form_sizer.Add(self.choose_book, pos=(0, 1), flag=wx.EXPAND | wx.ALL, border=5)
         
-        # choose members dropown        
         form_sizer.Add(choose_member_label, pos=(1,0), flag=wx.ALL, border=5)
         form_sizer.Add(self.choose_member, pos=(1,1), flag=wx.EXPAND | wx.ALL, border=5)
         
@@ -63,60 +55,64 @@ class BorrowView(wx.Panel):
         sizer.Add(return_button, 0, wx.CENTER | wx.ALL, 10)
 
         self.SetSizer(sizer)
+        
         self.selected_book_id = None
         self.selected_member_id = None
+        
         # Load borrow records into the table
         self.load_borrow_records()
+        
+        # Populate dropdowns
+        self.populate_books_dropdown()
+        self.populate_members_dropdown()
+
+        # Subscribe to updates
+        pub.subscribe(self.populate_books_dropdown, "update_books")
+        pub.subscribe(self.populate_members_dropdown, "update_members")
+        
+        # Auto-refresh on show
+        self.Bind(wx.EVT_SHOW, self.on_show)
+
+    def on_show(self, event):
+        """Refresh data when the panel is shown."""
+        if event.IsShown():
+            wx.CallAfter(self.populate_books_dropdown)
+            wx.CallAfter(self.populate_members_dropdown)
+            wx.CallAfter(self.load_borrow_records)
 
     def populate_books_dropdown(self):
-            conn = sqlite3.connect("database/library.db")
-            cursor = conn.cursor()
-
-            # Select all books to show in the dropdown
-            cursor.execute(
-                """
-                SELECT id,title FROM Book
-                """,
-            )
-            rows = cursor.fetchall()
-            self.book_dict = {row[0]:row[1] for row in rows}
-            self.choose_book.AppendItems(list(self.book_dict.values()))
-            conn.close()
-
-    def populate_members_dropdown(self):
+        """Load books into the dropdown."""
         conn = sqlite3.connect("database/library.db")
         cursor = conn.cursor()
 
-        # Select all members to show in the dropdown
-        cursor.execute(
-            """
-            SELECT id,name FROM Member
-            """,
-        )
+        self.choose_book.Clear()  # Clear previous items
+        self.book_dict = {}
+
+        cursor.execute("SELECT id, title FROM Book")
         rows = cursor.fetchall()
-        self.member_dict = {row[0]:row[1] for row in rows}
+        
+        for row in rows:
+            self.book_dict[row[0]] = row[1]
+
+        self.choose_book.AppendItems(list(self.book_dict.values()))
+        conn.close()
+
+    def populate_members_dropdown(self):
+        """Load members into the dropdown."""
+        conn = sqlite3.connect("database/library.db")
+        cursor = conn.cursor()
+
+        self.choose_member.Clear()  # Clear previous items
+        self.member_dict = {}
+
+        cursor.execute("SELECT id, name FROM Member")
+        rows = cursor.fetchall()
+
+        for row in rows:
+            self.member_dict[row[0]] = row[1]
+
         self.choose_member.AppendItems(list(self.member_dict.values()))
         conn.close()
-    
-    def on_select_book(self, event):
-        #Get selected value
-        selected_book = self.choose_book.GetValue()
-        
-        # Find the corresponding key using the dictionary
-        self.selected_book_id = next((key for key, value in self.book_dict.items() if value == selected_book), None)
-
-        # Display the key-value pair
-        # wx.MessageBox(f"Selected ID: {selected_id}\nSelected Title: {selected_book}", "Selection Info")
-        
-    def on_select_member(self, event):
-        #Get selected value
-        selected_member = self.choose_member.GetValue()
-        
-        # Find the corresponding key using the dictionary
-        self.selected_member_id = next((key for key, value in self.member_dict.items() if value == selected_member), None)
-
-        # Display the key-value pair
-        # wx.MessageBox(f"Selected ID: {selected_id}\nSelected Name: {selected_member}", "Selection Info")
     
     def on_borrow_book(self, event):
         """Borrow a book."""
@@ -132,25 +128,14 @@ class BorrowView(wx.Panel):
         cursor = conn.cursor()
 
         # Check if the book is already borrowed
-        cursor.execute(
-            """
-            SELECT id FROM Borrow WHERE book_id = ? AND return_date IS NULL
-            """,
-            (book_id,),
-        )
+        cursor.execute("SELECT id FROM Borrow WHERE book_id = ? AND return_date IS NULL", (book_id,))
         if cursor.fetchone():
             wx.MessageBox("The book is already borrowed.", "Error", wx.OK | wx.ICON_ERROR)
             conn.close()
             return
 
-        cursor.execute(
-            """
-            INSERT INTO Borrow (member_id, book_id, borrow_date)
-            VALUES (?, ?, ?)
-            """,
-            (member_id, book_id, borrow_date),
-        )
-
+        cursor.execute("INSERT INTO Borrow (member_id, book_id, borrow_date) VALUES (?, ?, ?)", 
+                       (member_id, book_id, borrow_date))
         conn.commit()
         conn.close()
 
@@ -158,6 +143,9 @@ class BorrowView(wx.Panel):
 
         self.load_borrow_records()
         self.clear_form()
+
+        # Notify other views to update
+        pub.sendMessage("update_books")
 
     def on_return_book(self, event):
         """Mark a book as returned."""
@@ -172,14 +160,7 @@ class BorrowView(wx.Panel):
 
         conn = sqlite3.connect("database/library.db")
         cursor = conn.cursor()
-
-        cursor.execute(
-            """
-            UPDATE Borrow SET return_date = ?
-            WHERE id = ?
-            """,
-            (return_date, borrow_id),
-        )
+        cursor.execute("UPDATE Borrow SET return_date = ? WHERE id = ?", (return_date, borrow_id))
         conn.commit()
         conn.close()
 
@@ -200,5 +181,7 @@ class BorrowView(wx.Panel):
 
     def clear_form(self):
         """Clear the input form."""
-        self.choose_book.SetValue("")
-        self.choose_member.SetValue("")
+        self.choose_book.SetSelection(wx.NOT_FOUND)
+        self.choose_member.SetSelection(wx.NOT_FOUND)
+        self.selected_book_id = None
+        self.selected_member_id = None

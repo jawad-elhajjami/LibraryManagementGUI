@@ -1,5 +1,6 @@
 import wx
 import sqlite3
+from wx.lib.pubsub import pub 
 
 
 class BookView(wx.Panel):
@@ -29,6 +30,9 @@ class BookView(wx.Panel):
         add_button = wx.Button(self, label="Add Book")
         add_button.Bind(wx.EVT_BUTTON, self.on_add_book)
 
+        update_button = wx.Button(self, label="Update Book")
+        update_button.Bind(wx.EVT_BUTTON, self.on_update_book)
+        
         form_sizer.Add(title_label, pos=(0, 0), flag=wx.ALL, border=5)
         form_sizer.Add(self.title_input, pos=(0, 1), flag=wx.EXPAND | wx.ALL, border=5)
 
@@ -44,6 +48,8 @@ class BookView(wx.Panel):
         form_sizer.Add(add_button, pos=(4, 0), span=(1, 2), flag=wx.CENTER | wx.ALL, border=10)
         form_sizer.AddGrowableCol(1)
 
+        form_sizer.Add(update_button, pos=(4, 2), flag=wx.CENTER | wx.ALL,  border=5)
+        
         # Table to display books
         self.book_table = wx.ListCtrl(
             self, style=wx.LC_REPORT | wx.BORDER_SUNKEN
@@ -53,8 +59,12 @@ class BookView(wx.Panel):
         self.book_table.InsertColumn(2, "Author", width=150)
         self.book_table.InsertColumn(3, "Genre", width=100)
         self.book_table.InsertColumn(4, "Availability", width=100)
-
+        
         # Buttons to update or delete books
+
+        # Bind double-click event
+        self.book_table.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.on_edit_book)
+
         delete_button = wx.Button(self, label="Delete Book")
         delete_button.Bind(wx.EVT_BUTTON, self.on_delete_book)
 
@@ -65,9 +75,61 @@ class BookView(wx.Panel):
 
         self.SetSizer(sizer)
 
+        # Track selected book ID for updates
+        self.selected_book_id = None
+        
         # Load books into the table
         self.load_books()
 
+    def on_edit_book(self, event):
+        """Load selected book details into the form for editing."""
+        selected_item = event.GetIndex()
+
+        self.selected_book_id = self.book_table.GetItemText(selected_item)  # Book ID
+        title = self.book_table.GetItem(selected_item, 1).GetText()
+        author = self.book_table.GetItem(selected_item, 2).GetText()
+        genre = self.book_table.GetItem(selected_item, 3).GetText()
+        availability = self.availability_input.GetValue()
+        
+        # Populate the form with selected book's details
+        self.title_input.SetValue(title)
+        self.author_input.SetValue(author)
+        self.genre_input.SetValue(genre)
+        self.availability_input.SetValue(availability)
+    
+    def on_update_book(self, event):
+        """Update the selected book in the database."""
+        if not self.selected_book_id:
+            wx.MessageBox("Please select a book to update by double-clicking it.", "Error", wx.OK | wx.ICON_ERROR)
+            return
+
+        title = self.title_input.GetValue()
+        author = self.author_input.GetValue()
+        genre = self.genre_input.GetValue()
+        availability = self.availability_input.GetValue()
+
+        if not title or not author or not genre or not availability:
+            wx.MessageBox("All fields are required.", "Error", wx.OK | wx.ICON_ERROR)
+            return
+
+        conn = sqlite3.connect("database/library.db")
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            UPDATE Book SET title = ?, author = ?, genre = ?, availability = ?
+            WHERE id = ?
+            """,
+            (title, author, genre, availability, self.selected_book_id),
+        )
+        conn.commit()
+        conn.close()
+
+        wx.MessageBox("Book updated successfully!", "Success", wx.OK | wx.ICON_INFORMATION)
+        self.load_books()
+        pub.sendMessage("update_books")
+        self.clear_form()
+     
     def on_add_book(self, event):
         """Add a new book to the database."""
         title = self.title_input.GetValue()
@@ -96,6 +158,7 @@ class BookView(wx.Panel):
         wx.MessageBox("Book added successfully!", "Success", wx.OK | wx.ICON_INFORMATION)
 
         self.load_books()
+        pub.sendMessage("update_books")
         self.clear_form()
 
     def load_books(self):
@@ -127,6 +190,7 @@ class BookView(wx.Panel):
         conn.close()
 
         wx.MessageBox("Book deleted successfully!", "Success", wx.OK | wx.ICON_INFORMATION)
+        pub.sendMessage("update_books")
         self.load_books()
 
     def clear_form(self):

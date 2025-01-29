@@ -1,6 +1,7 @@
 import wx
 import sqlite3
 from datetime import datetime  # Import the datetime module
+from wx.lib.pubsub import pub 
 
 
 class MemberView(wx.Panel):
@@ -91,6 +92,7 @@ class MemberView(wx.Panel):
         wx.MessageBox("Member added successfully!", "Success", wx.OK | wx.ICON_INFORMATION)
 
         self.load_members()
+        pub.sendMessage("update_members")
         self.clear_form()
 
     def load_members(self):
@@ -122,6 +124,7 @@ class MemberView(wx.Panel):
         conn.close()
 
         wx.MessageBox("Member deleted successfully!", "Success", wx.OK | wx.ICON_INFORMATION)
+        pub.sendMessage("update_members")
         self.load_members()
 
     def clear_form(self):
