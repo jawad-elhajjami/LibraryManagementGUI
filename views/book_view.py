@@ -89,7 +89,7 @@ class BookView(wx.Panel):
         title = self.book_table.GetItem(selected_item, 1).GetText()
         author = self.book_table.GetItem(selected_item, 2).GetText()
         genre = self.book_table.GetItem(selected_item, 3).GetText()
-        availability = self.availability_input.GetValue()
+        availability = self.book_table.GetItem(selected_item, 4).GetText()
         
         # Populate the form with selected book's details
         self.title_input.SetValue(title)

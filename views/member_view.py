@@ -26,6 +26,10 @@ class MemberView(wx.Panel):
         add_button = wx.Button(self, label="Add Member")
         add_button.Bind(wx.EVT_BUTTON, self.on_add_member)
 
+        # update member button
+        update_button = wx.Button(self, label="Update Member")
+        update_button.Bind(wx.EVT_BUTTON, self.on_update_member)  
+        
         form_sizer.Add(name_label, pos=(0, 0), flag=wx.ALL, border=5)
         form_sizer.Add(self.name_input, pos=(0, 1), flag=wx.EXPAND | wx.ALL, border=5)
 
@@ -38,6 +42,9 @@ class MemberView(wx.Panel):
         form_sizer.Add(add_button, pos=(3, 0), span=(1, 2), flag=wx.CENTER | wx.ALL, border=10)
         form_sizer.AddGrowableCol(1)
 
+        form_sizer.Add(update_button, pos=(4, 2), flag=wx.CENTER | wx.ALL,  border=5)
+              
+        
         # Table to display members
         self.member_table = wx.ListCtrl(
             self, style=wx.LC_REPORT | wx.BORDER_SUNKEN
@@ -48,6 +55,9 @@ class MemberView(wx.Panel):
         self.member_table.InsertColumn(3, "Phone", width=100)
         self.member_table.InsertColumn(4, "Membership date", width=100)
 
+        # Bind double-click event
+        self.member_table.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.on_edit_member)
+        
         # Buttons to delete members
         delete_button = wx.Button(self, label="Delete Member")
         delete_button.Bind(wx.EVT_BUTTON, self.on_delete_member)
@@ -58,6 +68,9 @@ class MemberView(wx.Panel):
         sizer.Add(delete_button, 0, wx.CENTER | wx.ALL, 10)
 
         self.SetSizer(sizer)
+
+        # Track selected Member ID for updates
+        self.selected_member_id = None
 
         # Load members into the table
         self.load_members()
@@ -127,6 +140,52 @@ class MemberView(wx.Panel):
         pub.sendMessage("update_members")
         self.load_members()
 
+    def on_edit_member(self, event):
+        """Load selected member details into the form for editing."""
+        selected_item = event.GetIndex()
+
+        self.selected_member_id = self.member_table.GetItemText(selected_item)  # Member ID
+        name = self.member_table.GetItem(selected_item, 1).GetText()
+        email = self.member_table.GetItem(selected_item, 2).GetText()
+        phone = self.member_table.GetItem(selected_item, 3).GetText()
+        
+        # Populate the form with selected member's details
+        self.name_input.SetValue(name)
+        self.email_input.SetValue(email)
+        self.phone_input.SetValue(phone)
+    
+    def on_update_member(self, event):
+        """Update the selected member in the database."""
+        if not self.selected_member_id:
+            wx.MessageBox("Please select a member to update by double-clicking it.", "Error", wx.OK | wx.ICON_ERROR)
+            return
+
+        name = self.name_input.GetValue()
+        email = self.email_input.GetValue()
+        phone = self.phone_input.GetValue()
+
+        if not name or not email or not phone:
+            wx.MessageBox("All fields are required.", "Error", wx.OK | wx.ICON_ERROR)
+            return
+
+        conn = sqlite3.connect("database/library.db")
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            UPDATE Member SET name = ?, email = ?, phone = ?
+            WHERE id = ?
+            """,
+            (name, email, phone, self.selected_member_id),
+        )
+        conn.commit()
+        conn.close()
+
+        wx.MessageBox("Member updated successfully!", "Success", wx.OK | wx.ICON_INFORMATION)
+        self.load_members()
+        pub.sendMessage("update_members")
+        self.clear_form()
+    
     def clear_form(self):
         """Clear the input form."""
         self.name_input.SetValue("")
