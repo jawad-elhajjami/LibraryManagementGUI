@@ -40,8 +40,8 @@ class BorrowView(wx.Panel):
             self, style=wx.LC_REPORT | wx.BORDER_SUNKEN
         )
         self.borrow_table.InsertColumn(0, "Borrow ID", width=70)
-        self.borrow_table.InsertColumn(1, "Member ID", width=100)
-        self.borrow_table.InsertColumn(2, "Book ID", width=100)
+        self.borrow_table.InsertColumn(1, "Member Name", width=100)
+        self.borrow_table.InsertColumn(2, "Book Title", width=100)
         self.borrow_table.InsertColumn(3, "Borrow Date", width=150)
         self.borrow_table.InsertColumn(4, "Return Date", width=150)
 
@@ -193,15 +193,31 @@ class BorrowView(wx.Panel):
         self.load_borrow_records()
 
     def load_borrow_records(self):
-        """Load borrow records from the database into the table."""
+        """Load borrow records with full names and book titles into the table."""
         conn = sqlite3.connect("database/library.db")
         cursor = conn.cursor()
 
         self.borrow_table.DeleteAllItems()
-        for row in cursor.execute("SELECT * FROM Borrow"):
+
+        query = """
+            SELECT 
+                b.id, 
+                m.name, 
+                bk.title, 
+                strftime('%d-%m-%Y %H:%M', b.borrow_date), 
+                COALESCE(strftime('%d-%m-%Y %H:%M', b.return_date), 'Not Returned') 
+            FROM Borrow b
+            JOIN Member m ON b.member_id = m.id
+            JOIN Book bk ON b.book_id = bk.id
+            ORDER BY b.id DESC
+        """
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        for row in rows:
             self.borrow_table.Append([str(col) for col in row])
 
         conn.close()
+
 
     def clear_form(self):
         """Clear the input form."""
