@@ -131,13 +131,14 @@ class MemberView(wx.Panel):
 
         conn = sqlite3.connect("database/library.db")
         cursor = conn.cursor()
-
         cursor.execute("DELETE FROM Member WHERE id = ?", (member_id,))
+        cursor.execute("DELETE FROM Borrow WHERE member_id = ?", (member_id,))
         conn.commit()
         conn.close()
 
         wx.MessageBox("Member deleted successfully!", "Success", wx.OK | wx.ICON_INFORMATION)
         pub.sendMessage("update_members")
+        pub.sendMessage("update_borrow_records")  # Notify BorrowView to refresh
         self.load_members()
 
     def on_edit_member(self, event):
