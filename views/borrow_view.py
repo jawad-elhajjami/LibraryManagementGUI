@@ -49,10 +49,14 @@ class BorrowView(wx.Panel):
         return_button = wx.Button(self, label="Return Book")
         return_button.Bind(wx.EVT_BUTTON, self.on_return_book)
 
+        delete_button = wx.Button(self, label="Delete Record")
+        delete_button.Bind(wx.EVT_BUTTON, self.on_delete_record)
+        
         # Main layout
         sizer.Add(form_sizer, 0, wx.EXPAND | wx.ALL, 10)
         sizer.Add(self.borrow_table, 1, wx.EXPAND | wx.ALL, 10)
         sizer.Add(return_button, 0, wx.CENTER | wx.ALL, 10)
+        sizer.Add(delete_button, 0, wx.CENTER | wx.ALL, 10)
 
         self.SetSizer(sizer)
         
@@ -69,6 +73,7 @@ class BorrowView(wx.Panel):
         # Subscribe to updates
         pub.subscribe(self.populate_books_dropdown, "update_books")
         pub.subscribe(self.populate_members_dropdown, "update_members")
+        pub.subscribe(self.load_borrow_records, "update_borrow_records")
         
         # Auto-refresh on show
         self.Bind(wx.EVT_SHOW, self.on_show)
@@ -204,3 +209,24 @@ class BorrowView(wx.Panel):
         self.choose_member.SetSelection(wx.NOT_FOUND)
         self.selected_book_id = None
         self.selected_member_id = None
+
+    def on_delete_record(self, event):
+        """Delete the selected record from the database."""
+        selected_item = self.borrow_table.GetFirstSelected()
+
+        if selected_item == -1:
+            wx.MessageBox("Please select a record to delete.", "Error", wx.OK | wx.ICON_ERROR)
+            return
+
+        record_id = self.borrow_table.GetItemText(selected_item)
+
+        conn = sqlite3.connect("database/library.db")
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM Borrow WHERE id = ?", (record_id,))  
+
+        conn.commit()
+        conn.close()
+
+        wx.MessageBox("Record deleted successfully!", "Success", wx.OK | wx.ICON_INFORMATION)
+        pub.sendMessage("update_borrow_records")  # Notify BorrowView to refresh

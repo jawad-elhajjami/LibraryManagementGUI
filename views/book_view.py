@@ -184,13 +184,16 @@ class BookView(wx.Panel):
 
         conn = sqlite3.connect("database/library.db")
         cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM Borrow WHERE book_id = ?", (book_id,))  
+        cursor.execute("DELETE FROM Book WHERE id = ?", (book_id,))  
 
-        cursor.execute("DELETE FROM Book WHERE id = ?", (book_id,))
         conn.commit()
         conn.close()
 
         wx.MessageBox("Book deleted successfully!", "Success", wx.OK | wx.ICON_INFORMATION)
         pub.sendMessage("update_books")
+        pub.sendMessage("update_borrow_records")  # Notify BorrowView to refresh
         self.load_books()
 
     def clear_form(self):
