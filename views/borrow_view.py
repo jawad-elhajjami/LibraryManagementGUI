@@ -3,7 +3,6 @@ import sqlite3
 from datetime import datetime
 from wx.lib.pubsub import pub 
 
-
 class BorrowView(wx.Panel):
     def __init__(self, parent):
         super(BorrowView, self).__init__(parent)
