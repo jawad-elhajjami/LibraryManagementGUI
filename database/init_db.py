@@ -6,14 +6,15 @@ def create_tables():
 
     # Enable foreign key constraints
     cursor.execute("PRAGMA foreign_keys = ON;")
-    
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Book (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category_id INTEGER NOT NULL,
         title TEXT NOT NULL,
         author TEXT NOT NULL,
-        genre TEXT NOT NULL,
-        availability TEXT NOT NULL
+        availability TEXT CHECK(availability IN ('Available', 'Not Available')) DEFAULT 'Available',
+        FOREIGN KEY(category_id) REFERENCES BookCategory(id) ON DELETE CASCADE
     )
     """)
     cursor.execute("""
@@ -21,7 +22,7 @@ def create_tables():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         email TEXT NOT NULL,
-        phone TEXT NOT NULL,  -- Changed to TEXT to handle phone numbers correctly
+        phone TEXT NOT NULL,  
         membership_date TEXT NOT NULL
     ) 
     """)
@@ -37,13 +38,11 @@ def create_tables():
         FOREIGN KEY(member_id) REFERENCES Member(id) ON DELETE CASCADE
     )
     """)
-
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS Staff (
+    CREATE TABLE IF NOT EXISTS BookCategory (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        position TEXT NOT NULL,
-        email TEXT NOT NULL
+        color TEXT NOT NULL
     )
     """)
 
