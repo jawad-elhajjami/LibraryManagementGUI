@@ -150,6 +150,15 @@ class BorrowView(wx.Panel):
         conn = sqlite3.connect("database/library.db")
         cursor = conn.cursor()
 
+        # Check if the book is available
+        cursor.execute("SELECT availability FROM Book WHERE id = ?", (book_id,))
+        availability = cursor.fetchone()
+
+        if availability and availability[0] == "Not Available":
+            wx.MessageBox("The book is not available for borrowing.", "Error", wx.OK | wx.ICON_ERROR)
+            conn.close()
+            return
+        
         # Check if the book is already borrowed
         cursor.execute("SELECT id FROM Borrow WHERE book_id = ? AND return_date IS NULL", (book_id,))
         if cursor.fetchone():
@@ -157,8 +166,13 @@ class BorrowView(wx.Panel):
             conn.close()
             return
 
+        # Insert borrow record
         cursor.execute("INSERT INTO Borrow (member_id, book_id, borrow_date) VALUES (?, ?, ?)", 
-                       (member_id, book_id, borrow_date))
+                    (member_id, book_id, borrow_date))
+
+        # Update book availability to False
+        cursor.execute("UPDATE Book SET availability = ? WHERE id = ?", ("Not Available", book_id))
+
         conn.commit()
         conn.close()
 
@@ -183,7 +197,17 @@ class BorrowView(wx.Panel):
 
         conn = sqlite3.connect("database/library.db")
         cursor = conn.cursor()
+        
+        # Mark the book as returned in the Borrow table
         cursor.execute("UPDATE Borrow SET return_date = ? WHERE id = ?", (return_date, borrow_id))
+
+        # Get the book_id associated with the borrow record
+        cursor.execute("SELECT book_id FROM Borrow WHERE id = ?", (borrow_id,))
+        book_id = cursor.fetchone()[0]
+
+        # Update book availability to True
+        cursor.execute("UPDATE Book SET availability = ? WHERE id = ?", ("Available", book_id))
+
         conn.commit()
         conn.close()
 
